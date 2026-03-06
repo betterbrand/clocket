@@ -5,7 +5,7 @@ description: Self-hosted, privacy-first calendar management for OpenClaw agents 
 
 # Radicale Calendar Skill
 
-Self-hosted calendar management for OpenClaw agents. Radicale is a lightweight CalDAV server that runs locally — no cloud, no accounts, no data leaving your machine.
+Self-hosted calendar management for OpenClaw agents. Radicale is a lightweight CalDAV server that runs locally: Local. No new accounts, no data leaving your machine.
 
 ## Quick Start
 
