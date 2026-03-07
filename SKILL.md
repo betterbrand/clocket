@@ -1,102 +1,123 @@
 ---
 name: clocket
-description: Self-hosted, privacy-first calendar management for OpenClaw agents via Radicale CalDAV server. Use when an agent needs to create, read, update, or delete calendar events programmatically — editorial calendars, recurring schedules, guest coordination, reminders. No cloud accounts required. Data never leaves the machine. Syncs with any CalDAV client (Apple Calendar, Thunderbird, DAVx⁵). Use for (1) setting up a local calendar server, (2) managing events from agent workflows, (3) editorial/content calendars with guest tracking, (4) recurring event management, (5) any calendar task where privacy matters.
+description: >
+  Self-hosted, privacy-first calendar for OpenClaw agents. Powered by Radicale (CalDAV).
+  Use when an agent needs to manage events, editorial calendars, recurring schedules,
+  guest coordination, or reminders — without cloud accounts. Data never leaves the machine.
+  Syncs with any CalDAV client (Apple Calendar, Thunderbird, DAVx⁵).
 ---
 
-# Radicale Calendar Skill
+# Clocket
 
-Self-hosted calendar management for OpenClaw agents. Radicale is a lightweight CalDAV server that runs locally: Local. No new accounts, no data leaving your machine.
+Self-hosted calendar management for OpenClaw agents. No cloud. No accounts. No data leaving your machine.
+
+Powered by [Radicale](https://radicale.org), a lightweight CalDAV server that stores everything locally.
 
 ## Quick Start
 
-### Install
-
 ```bash
+# Install Radicale + configure + start server
 bash scripts/install.sh
-```
 
-This installs Radicale, creates config, sets up a LaunchAgent for persistence, and starts the server on `127.0.0.1:5232`.
+# Create a calendar
+bash scripts/clocket.sh create "work" "Work Calendar"
 
-### Create a Calendar
+# Add an event
+bash scripts/clocket.sh add "work" \
+  --title "Team Sync" \
+  --start "2026-03-10T09:00" \
+  --end "2026-03-10T09:30" \
+  --tz "America/Los_Angeles"
 
-```bash
-bash scripts/calendar.sh create "my-calendar" "My Calendar"
-```
-
-### Add an Event
-
-```bash
-bash scripts/calendar.sh add "my-calendar" \
+# Add a recurring event
+bash scripts/clocket.sh add "work" \
   --title "Weekly Standup" \
   --start "2026-03-10T09:00" \
   --end "2026-03-10T09:30" \
-  --recurring weekly
-```
+  --recurring weekly \
+  --tz "America/Los_Angeles"
 
-### List Events
+# List events
+bash scripts/clocket.sh list "work"
 
-```bash
-bash scripts/calendar.sh list "my-calendar"
-```
+# List upcoming N events
+bash scripts/clocket.sh list "work" --upcoming 5
 
-### Update an Event
-
-```bash
-bash scripts/calendar.sh update "my-calendar" "event-uid" \
+# Update an event
+bash scripts/clocket.sh update "work" "event-uid" \
   --title "New Title" \
-  --description "Updated description"
-```
+  --description "Updated notes"
 
-### Delete an Event
+# Delete an event
+bash scripts/clocket.sh delete "work" "event-uid"
 
-```bash
-bash scripts/calendar.sh delete "my-calendar" "event-uid"
+# List all calendars
+bash scripts/clocket.sh calendars
 ```
 
 ## Architecture
 
 ```
-Agent (OpenClaw) → scripts/calendar.sh → Radicale (localhost:5232) → Local filesystem
+Agent (OpenClaw) → scripts/clocket.sh → Radicale (localhost:5232) → Local filesystem
                                               ↕
                                         CalDAV Clients
-                                   (Apple Calendar, etc.)
+                                   (Apple Calendar, Thunderbird, DAVx⁵)
 ```
 
 All data stored in `~/.openclaw/workspace/data/radicale/collections/`.
 
-## Configuration
-
-Default config lives at `~/.config/radicale/config`. The install script sets sensible defaults:
-- Binds to `127.0.0.1:5232` (localhost only — never exposed)
-- htpasswd auth (plaintext for localhost; use bcrypt if exposing via reverse proxy)
-- Filesystem storage in the workspace
-
-## CalDAV Client Sync
-
-To view calendars on your devices, connect any CalDAV client to `http://127.0.0.1:5232`. See `references/client-sync.md` for setup instructions per platform.
-
 ## Editorial Calendar Workflow
 
-For content calendars (podcast guests, X Spaces, blog posts):
+Built for content calendars — podcast guests, X Spaces, blog posts:
 
 ```bash
 # Create editorial calendar
-bash scripts/calendar.sh create "spaces" "Weekly X Spaces"
+bash scripts/clocket.sh create "spaces" "Weekly X Spaces"
 
-# Add episode with guest
-bash scripts/calendar.sh add "spaces" \
+# Add episode with guest tracking
+bash scripts/clocket.sh add "spaces" \
   --title "S01E05 - AI Privacy with Jane Doe" \
   --start "2026-04-03T09:30" \
   --end "2026-04-03T10:00" \
   --description "Guest: Jane Doe (@janedoe)\nTopic: Privacy in decentralized AI" \
-  --recurring weekly
+  --location "X (Twitter) Spaces" \
+  --recurring weekly \
+  --tz "America/Los_Angeles"
 
-# List upcoming episodes
-bash scripts/calendar.sh list "spaces" --upcoming 4
+# See what's coming up
+bash scripts/clocket.sh list "spaces" --upcoming 4
 ```
+
+## CalDAV Client Sync
+
+View calendars on your devices by connecting any CalDAV client to `http://127.0.0.1:5232`.
+See `references/client-sync.md` for per-platform setup.
+
+## Configuration
+
+Default config: `~/.config/radicale/config`
+
+| Setting | Default | Notes |
+|---------|---------|-------|
+| Bind address | `127.0.0.1:5232` | Localhost only — never exposed by default |
+| Auth | htpasswd (plain) | Use bcrypt if exposing via reverse proxy |
+| Storage | `~/.openclaw/workspace/data/radicale/collections/` | Flat files, easy to backup |
+
+## Requirements
+
+- Python 3.8+
+- macOS or Linux
+- `curl` (for CalDAV requests)
 
 ## Troubleshooting
 
-- **Server won't start**: Check if port 5232 is in use: `lsof -i :5232`
-- **Auth failing**: Verify `~/.config/radicale/users` has correct credentials
-- **LaunchAgent not loading**: Run `launchctl load ~/Library/LaunchAgents/com.clocket.plist`
+| Problem | Fix |
+|---------|-----|
+| Server won't start | Check port: `lsof -i :5232` |
+| Auth failing | Verify `~/.config/radicale/users` |
+| LaunchAgent not loading | `launchctl load ~/Library/LaunchAgents/com.clocket.plist` |
+| No events returned | Ensure calendar exists: `bash scripts/clocket.sh calendars` |
+
+## License
+
+MIT
